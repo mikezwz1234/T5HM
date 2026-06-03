@@ -1,0 +1,103 @@
+# =============================================================================
+# T5HM repo .gitignore
+# Strategy: ignore by default, whitelist only what's needed to RUN the
+# production pipeline (raw Data + 8 core scripts + trained model bundle +
+# training tables). All deliverables / model-interpretation outputs are
+# regenerated on demand and intentionally NOT committed.
+# =============================================================================
+
+# ---- Python / venv / caches -------------------------------------------------
+.venv/
+env/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# ---- Editor / OS ------------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Secrets ----------------------------------------------------------------
+credentials.yaml
+*.env
+.env*
+
+# ---- Project-root scratch / archives ---------------------------------------
+tmp*.py
+_dryrun.py
+_rewrite_cells.py
+check_progress.bat
+qa_*_report.txt
+*.yxmd
+*.bak
+New Workflow*
+whitespace-gc-main 1.zip
+jpn_adm_2019_shp.zip
+jpn_adm_gz_2019.xls
+repo_inventory.txt
+
+# ---- Raw data / reference (NOT in repo; restore from internal SharePoint) --
+Data/
+ref_jpn_adm_2019/
+ref_whitespace_gc/
+docs/
+scripts/
+
+# ---- Notebooks: ignore everything, whitelist only 03 + 04 ------------------
+notebooks/*
+!notebooks/03_data_prep.ipynb
+!notebooks/04_modeling.ipynb
+
+# ---- src/: ignore everything, whitelist only the production scripts -------
+# Tier 1 (model + scoring): notebook 03 (in 4 ANCHOR_MODE values) + the two
+# scripts below build the terminal feature table, then notebook 04 trains and
+# scores all candidate sets.
+#   build_terminal_anchors.py        Terminal anchor table from station GPKG
+#   build_terminal_features.py       Terminal-anchor enrichment (feature build)
+#   supplement_build_fast.py         Helper (transitive dep of build_terminal_features)
+#   score_whitespace.py              Standalone batch scorer (notebook 04 preferred)
+#   _plot_train_shap.py              Train-set SHAP bar/beeswarm PNGs
+# Tier 2 (picks pipeline, run in order):
+#   build_merged_v2_terminalpoly.py          Merge SC + Terminal + Roadside scored anchors
+#   _export_final_picks_terminalpoly_U4.py   U4 + 0.83 cal + ¥60M -> 3,466 picks
+#   _other_region_threshold_sweep.py         pop>=400 floor on Other -> 2,735
+#   _build_pop400_excel.py                   final 2-sheet Excel deliverable
+src/*
+!src/build_terminal_anchors.py
+!src/build_terminal_features.py
+!src/supplement_build_fast.py
+!src/score_whitespace.py
+!src/_plot_train_shap.py
+!src/build_merged_v2_terminalpoly.py
+!src/_export_final_picks_terminalpoly_U4.py
+!src/_other_region_threshold_sweep.py
+!src/_build_pop400_excel.py
+
+# =============================================================================
+# output/: only the model bundle + training tables are committed.
+# All deliverables (SHAP, feature importance, picks, HTML map, methodology
+# Word doc, etc.) are regenerated on demand and excluded.
+# =============================================================================
+output/*
+
+# Re-allow git to descend into the two folders we partially keep
+!output/models/
+!output/tables/
+
+# Inside each folder: hide everything, then whitelist specific files
+output/models/*
+output/tables/*
+
+# ---- output/models/ : production model bundle only -------------------------
+!output/models/xgb_l6m_sales_model_bundle.pkl
+
+# ---- output/tables/ : training set features + targets only -----------------
+!output/tables/model_features_full.csv
+!output/tables/y_targets.csv
