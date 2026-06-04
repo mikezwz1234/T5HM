@@ -118,22 +118,6 @@ writes to `output/whitespace_final/`. Both are gitignored.
 
 ---
 
-## Filter logic
-
-1. **Pre-filter** — keep a candidate if `competitors_in_500m_sq_cnt ≥ 1`
-   **or** `pop_total_500m ≥ 5000` (captures daytime/transient flow that
-   residential population alone misses). This yields the 3,466 picks.
-2. **Type thresholds** — applied during scoring: SC 9.80 / Terminal 9.70 /
-   Roadside 9.50.
-3. **Regional floor** — non-Focus-4 regions only: `pop_total_500m ≥ 400`
-   (≈ p25 of training stores), leaving 2,735. Focus 4 = Tokyo / Osaka /
-   Aichi / Fukuoka.
-
-Starbucks is excluded from the competitor count — it enters the model
-separately as a positive co-location signal and is the top feature.
-
----
-
 ## Notes
 
 - `Data/` (~666 MB) is **not** in the repo — restore from SharePoint.
