@@ -1,8 +1,7 @@
 # T5HM — Whitespace Analysis (Japan Tea Brand)
 
-Where should the brand open its next stores in Japan? This repo learns what
-drives sales at the existing stores, then scores every candidate location in
-the country and shortlists the best ones.
+This repo learns what drives sales at the existing stores, then scores every
+candidate location in the country and shortlists the best ones.
 
 ## How it works
 
@@ -15,33 +14,14 @@ the country and shortlists the best ones.
 3. **Score candidates** — apply the model to three candidate universes:
    Roadside (a 500m grid over Japan, ~143k), SC (unopened shopping centres,
    ~2.9k), and Terminal (major station catchments, ~2.5k).
-4. **Filter to a shortlist** — keep locations clearing the sales floor and a
-   few sanity filters, then rank them.
+4. **Filter to a shortlist** — keep locations passing a few sanity filters
+   (competitor / population), then rank them.
 
-The repo ships the trained model, the training tables, and the scripts for
-the steps not already inside the notebooks. Raw input data and large
-deliverables (maps, full Excel) live on internal SharePoint.
-
----
-
-## Results (TL;DR)
-
-From ~148k candidates the filters narrow to a recommended shortlist:
-
-- **3,466** locations pass the pre-filter + ¥60M/yr sales floor.
-- Outside the 4 major metros we add a population floor, leaving **2,735
-  recommended sites**.
-
-Recommended **2,735 sites**, by region and store type:
-
-| Region | Roadside | SC | Terminal | **Total** |
-|---|---:|---:|---:|---:|
-| Focus 4 (Tokyo / Osaka / Aichi / Fukuoka) | 504 | 538 | 404 | **1,446** |
-| Other regions (after `pop ≥ 400` floor) | 440 | 532 | 317 | **1,289** |
-| **Total** | **944** | **1,070** | **721** | **2,735** |
-
-Sales forecast per location = `raw_model_prediction × 0.83 × 1.12`
-(de-bias × forward-growth premium); the ¥60M/yr floor is applied to it.
+Everything notebooks 03 and 04 can do is done in the notebooks. `src/` only
+holds what the notebooks can't: building Terminal features (different geometry
+than the grid), and the downstream pipeline that turns model scores into the
+final picks. Raw input data and large deliverables (maps, full Excel) live on
+internal SharePoint.
 
 ---
 
@@ -55,15 +35,16 @@ T5HM/
 ├── notebooks/
 │   ├── 03_data_prep.ipynb            # raw Data -> features per location (ANCHOR_MODE switch)
 │   └── 04_modeling.ipynb             # train XGBoost + score grid/SC/Terminal + SHAP
-├── src/                              # every file below is used; see Tier 1 / Tier 2
-│   │  # --- Tier 1: terminal feature build + train SHAP ---
+├── src/                              # only what notebooks 03/04 can't do
+│   │  # --- for notebook 03: build Terminal features (03 handles grid/SC, not Terminal) ---
 │   ├── build_terminal_anchors.py        # station GPKG -> terminal anchor table
 │   ├── build_terminal_features.py       # enrich terminal anchors into model features
 │   ├── supplement_build_fast.py         # ESRI enrichment helpers (imported above)
+│   │  # --- for notebook 04: extra train-set SHAP plots ---
 │   ├── _plot_train_shap.py              # train-set SHAP bar + beeswarm PNGs
-│   │  # --- Tier 2: final-picks pipeline (run in order) ---
+│   │  # --- after notebook 04: turn model scores into final picks (run in order) ---
 │   ├── build_merged_v2_terminalpoly.py  # merge SC + Terminal + Roadside scored universe
-│   ├── _export_final_picks_terminalpoly_U4.py  # pre-filter + calibration + ¥60M -> 3,466 picks
+│   ├── _export_final_picks_terminalpoly_U4.py  # pre-filter + calibration -> 3,466 picks
 │   ├── _other_region_threshold_sweep.py # pop>=400 floor on non-metro -> 2,735 picks
 │   └── _build_pop400_excel.py           # final two-sheet Excel deliverable
 └── output/
@@ -140,12 +121,12 @@ writes to `output/whitespace_final/`. Both are gitignored.
 
 1. **Pre-filter** — keep a candidate if `competitors_in_500m_sq_cnt ≥ 1`
    **or** `pop_total_500m ≥ 5000` (captures daytime/transient flow that
-   residential population alone misses).
-2. **Sales floor** — calibrated forecast ≥ ¥60M/yr (≈ ¥5M/month).
-3. **Type thresholds** — applied during scoring: SC 9.80 / Terminal 9.70 /
+   residential population alone misses). This yields the 3,466 picks.
+2. **Type thresholds** — applied during scoring: SC 9.80 / Terminal 9.70 /
    Roadside 9.50.
-4. **Regional floor** — non-Focus-4 regions only: `pop_total_500m ≥ 400`
-   (≈ p25 of training stores). Focus 4 = Tokyo / Osaka / Aichi / Fukuoka.
+3. **Regional floor** — non-Focus-4 regions only: `pop_total_500m ≥ 400`
+   (≈ p25 of training stores), leaving 2,735. Focus 4 = Tokyo / Osaka /
+   Aichi / Fukuoka.
 
 Starbucks is excluded from the competitor count — it enters the model
 separately as a positive co-location signal and is the top feature.
