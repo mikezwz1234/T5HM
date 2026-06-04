@@ -75,7 +75,7 @@ each run writes one feature CSV to `output/tables/`:
 
 | `ANCHOR_MODE` | Output |
 |---|---|
-| `existing_store` | `model_features_train.csv` (186 training rows) |
+| `existing_store` | `model_features_full.csv` (186 training rows — committed) |
 | `whitespace_grid` | `model_features_whitespace_grid_full.csv` (~143k) |
 | `whitespace_sc` | `model_features_whitespace_sc_full.csv` (~2.9k) |
 | `whitespace_supplement` | `model_features_whitespace_supplement_full.csv` |
@@ -137,8 +137,6 @@ separately as a positive co-location signal and is the top feature.
 
 - `Data/` (~666 MB) is **not** in the repo — restore from SharePoint.
 - `credentials.yaml` is gitignored; create it from the `.example`.
-- `output/whitespace_final/merged_universe_scored.csv` (Tier 2 step 1 input)
-  is also a SharePoint download.
 - Final deliverables (Excel, maps, Word doc) are excluded to keep the repo
   small; Tier 2 regenerates them on demand.
 - The model bundle (~0.8 MB) is committed directly — no Git LFS needed.

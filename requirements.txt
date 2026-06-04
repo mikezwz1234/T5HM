@@ -20,7 +20,7 @@ pyogrio
 # --- ESRI BA enrichment (notebook 03 + supplement_build_fast.py) ---
 arcgis>=2.4
 
-# --- Modeling (notebook 04 + score_whitespace.py + _plot_train_shap.py) ---
+# --- Modeling (notebook 04 + _plot_train_shap.py) ---
 xgboost>=2.0
 scikit-learn
 shap
