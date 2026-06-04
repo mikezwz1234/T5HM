@@ -56,25 +56,16 @@ notebooks/*
 !notebooks/04_modeling.ipynb
 
 # ---- src/: ignore everything, whitelist only the production scripts -------
-# Tier 1 add-ons (terminal feature build + train SHAP):
-#   build_terminal_anchors.py        Terminal anchor table from station GPKG
-#   build_terminal_features.py       Terminal-anchor enrichment (feature build)
-#   supplement_build_fast.py         Helper (transitive dep of build_terminal_features)
-#   _plot_train_shap.py              Train-set SHAP bar/beeswarm PNGs
-# Tier 2 picks pipeline (run in order):
-#   build_merged_v2_terminalpoly.py          Merge SC + Terminal + Roadside scored anchors
-#   _export_final_picks_terminalpoly_U4.py   U4 + 0.83 cal + ¥60M -> 3,466 picks
-#   _other_region_threshold_sweep.py         pop>=400 floor on Other -> 2,735
-#   _build_pop400_excel.py                   final 2-sheet Excel deliverable
+# These cover what notebooks 03/04 can't do on their own:
+#   build_terminal_anchors.py        Terminal anchor table from station GPKG (for nb 03)
+#   build_terminal_features.py       Terminal-anchor enrichment / feature build (for nb 03)
+#   supplement_build_fast.py         ESRI enrichment helpers (imported by build_terminal_features)
+#   _plot_train_shap.py              Train-set SHAP bar/beeswarm PNGs (for nb 04)
 src/*
 !src/build_terminal_anchors.py
 !src/build_terminal_features.py
 !src/supplement_build_fast.py
 !src/_plot_train_shap.py
-!src/build_merged_v2_terminalpoly.py
-!src/_export_final_picks_terminalpoly_U4.py
-!src/_other_region_threshold_sweep.py
-!src/_build_pop400_excel.py
 
 # =============================================================================
 # output/: only the model bundle + training tables are committed.

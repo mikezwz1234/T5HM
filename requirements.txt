@@ -9,7 +9,6 @@ pyyaml
 tqdm
 matplotlib
 openpyxl
-xlsxwriter
 
 # --- Geo stack (notebook 03 + build_terminal_*.py) ---
 geopandas

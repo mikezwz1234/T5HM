@@ -1,7 +1,7 @@
 # T5HM — Whitespace Analysis (Japan Tea Brand)
 
 This repo learns what drives sales at the existing stores, then scores every
-candidate location in the country and shortlists the best ones.
+candidate location in the country by predicted monthly sales.
 
 ## How it works
 
@@ -11,18 +11,20 @@ candidate location in the country and shortlists the best ones.
 2. **Train the model** — fit an XGBoost model on 186 existing stores to
    predict monthly sales (5-fold cross-validation; 36 features after
    selection).
-3. **Score candidates** — apply the model to three candidate universes:
-   Roadside (a 500m grid over Japan, ~143k), SC (unopened shopping centres,
-   ~2.9k), and Terminal (major station catchments, ~2.5k).
-4. **Filter to a shortlist** — keep locations passing a few sanity filters
-   (competitor / population), then rank them.
+3. **Score candidates** — apply the model to three candidate universes and
+   rank each by predicted monthly sales: Roadside (a 500m grid over Japan,
+   ~143k), SC (unopened shopping centres, ~2.9k), and Terminal (major station
+   catchments, ~2.5k).
+
+The repo ends at scored, ranked candidates. Selecting the final shortlist
+(applying business cut-offs, regional balancing, etc.) was a manual,
+already-delivered step and is out of scope here.
 
 Everything notebooks 03 and 04 can do is done in the notebooks. `src/` only
 holds what the notebooks can't: building Terminal features (their anchors come
 from a curated station-catchment file plus station metadata, not the
-nationwide grid that notebook 03 generates), and the downstream pipeline that
-turns model scores into the final picks. Raw input data and large deliverables
-(maps, full Excel) live on internal SharePoint.
+nationwide grid that notebook 03 generates). Raw input data lives on internal
+SharePoint.
 
 ---
 
@@ -42,12 +44,7 @@ T5HM/
 │   ├── build_terminal_features.py       # enrich terminal anchors into model features
 │   ├── supplement_build_fast.py         # ESRI enrichment helpers (imported above)
 │   │  # --- for notebook 04: extra train-set SHAP plots ---
-│   ├── _plot_train_shap.py              # train-set SHAP bar + beeswarm PNGs
-│   │  # --- after notebook 04: turn model scores into final picks (run in order) ---
-│   ├── build_merged_v2_terminalpoly.py  # merge SC + Terminal + Roadside scored universe
-│   ├── _export_final_picks_terminalpoly_U4.py  # pre-filter + calibration -> 3,466 picks
-│   ├── _other_region_threshold_sweep.py # pop>=400 floor on non-metro -> 2,735 picks
-│   └── _build_pop400_excel.py           # final two-sheet Excel deliverable
+│   └── _plot_train_shap.py              # train-set SHAP bar + beeswarm PNGs
 └── output/
     ├── models/xgb_l6m_sales_model_bundle.pkl    # 5-fold model bundle (~0.8 MB)
     └── tables/
@@ -65,11 +62,11 @@ gitignored — restore from internal SharePoint.
 1. `pip install -r requirements.txt`
 2. Copy `credentials.yaml.example` → `credentials.yaml`, fill in ESRI creds.
 3. Restore `Data/` from internal SharePoint into the project root.
-4. Run notebook 03 (once per `ANCHOR_MODE`), then notebook 04 — see Tier 1.
+4. Run notebook 03 (once per `ANCHOR_MODE`), then notebook 04 — see below.
 
 ---
 
-## Tier 1 — Train + score (notebooks)
+## Train + score (notebooks)
 
 Notebook 03 has one switch at the top, `ANCHOR_MODE`. Re-run it once per mode;
 each run writes one feature CSV to `output/tables/`:
@@ -79,7 +76,6 @@ each run writes one feature CSV to `output/tables/`:
 | `existing_store` | `model_features_full.csv` (186 training rows — committed) |
 | `whitespace_grid` | `model_features_whitespace_grid_full.csv` (~143k) |
 | `whitespace_sc` | `model_features_whitespace_sc_full.csv` (~2.9k) |
-| `whitespace_supplement` | `model_features_whitespace_supplement_full.csv` |
 
 Terminal features aren't in notebook 03 (Terminal anchors come from a station
 polygon GPKG, not the grid). Build them with two scripts first:
@@ -100,28 +96,10 @@ Optional: `python src\_plot_train_shap.py` for train-set SHAP plots.
 
 ---
 
-## Tier 2 — Final picks pipeline
-
-Run in order. Requires the Tier 1 scores plus
-`output/whitespace_final/merged_universe_scored.csv` (the legacy Roadside + SC
-scored universe, restored from SharePoint).
-
-| # | Script | Output |
-|---|---|---|
-| 1 | `build_merged_v2_terminalpoly.py` | `merged_universe_scored_v2_terminalpoly.csv` |
-| 2 | `_export_final_picks_terminalpoly_U4.py` | 3,466 picks (`final_picks.csv`) + `universe_all_anchors.csv` |
-| 3 | `_other_region_threshold_sweep.py` | 2,735 picks (`final_picks_recommended.csv`) |
-| 4 | `_build_pop400_excel.py` | `picks_pop400_other_2sheets.xlsx` (all picks + filtered + summary) |
-
-Steps 2–4 write under `output/whitespace_terminalpoly_U4_60Myr/`; step 1
-writes to `output/whitespace_final/`. Both are gitignored.
-
----
-
 ## Notes
 
 - `Data/` (~666 MB) is **not** in the repo — restore from SharePoint.
 - `credentials.yaml` is gitignored; create it from the `.example`.
-- Final deliverables (Excel, maps, Word doc) are excluded to keep the repo
-  small; Tier 2 regenerates them on demand.
+- Large feature CSVs, the ESRI cache, and all deliverables are gitignored to
+  keep the repo small.
 - The model bundle (~0.8 MB) is committed directly — no Git LFS needed.
