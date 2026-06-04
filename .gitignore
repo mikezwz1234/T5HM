@@ -56,15 +56,12 @@ notebooks/*
 !notebooks/04_modeling.ipynb
 
 # ---- src/: ignore everything, whitelist only the production scripts -------
-# Tier 1 (model + scoring): notebook 03 (in 4 ANCHOR_MODE values) + the two
-# scripts below build the terminal feature table, then notebook 04 trains and
-# scores all candidate sets.
+# Tier 1 add-ons (terminal feature build + train SHAP):
 #   build_terminal_anchors.py        Terminal anchor table from station GPKG
 #   build_terminal_features.py       Terminal-anchor enrichment (feature build)
 #   supplement_build_fast.py         Helper (transitive dep of build_terminal_features)
-#   score_whitespace.py              Standalone batch scorer (notebook 04 preferred)
 #   _plot_train_shap.py              Train-set SHAP bar/beeswarm PNGs
-# Tier 2 (picks pipeline, run in order):
+# Tier 2 picks pipeline (run in order):
 #   build_merged_v2_terminalpoly.py          Merge SC + Terminal + Roadside scored anchors
 #   _export_final_picks_terminalpoly_U4.py   U4 + 0.83 cal + ¥60M -> 3,466 picks
 #   _other_region_threshold_sweep.py         pop>=400 floor on Other -> 2,735
@@ -73,7 +70,6 @@ src/*
 !src/build_terminal_anchors.py
 !src/build_terminal_features.py
 !src/supplement_build_fast.py
-!src/score_whitespace.py
 !src/_plot_train_shap.py
 !src/build_merged_v2_terminalpoly.py
 !src/_export_final_picks_terminalpoly_U4.py

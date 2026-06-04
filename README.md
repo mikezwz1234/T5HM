@@ -1,24 +1,54 @@
 # T5HM — Whitespace Analysis (Japan Tea Brand)
 
-End-to-end pipeline that turns ~143k 500m × 500m grid candidates into a
-ranked, calibrated shortlist of new-store locations across Japan, by store
-type (SC / Terminal / Roadside), grounded in the operating performance of
-the existing 217-store network. The repo ships the trained model, the
-training tables, and the production scripts; raw data and final
-deliverables live on internal SharePoint.
+Where should the brand open its next stores in Japan? This repo answers that
+by (1) learning what drives sales at the existing 217-store network, then
+(2) scoring every potential new location in the country and shortlisting the
+best ones.
+
+## How it works
+
+The whole project is four steps:
+
+1. **Build features** — for each location, compute ~36 signals about its
+   surroundings (population, competitors, Starbucks co-location, points of
+   interest, spending power, etc.) from ESRI + government data.
+2. **Train the model** — fit an XGBoost model on the 217 existing stores to
+   predict monthly sales from those features (5-fold cross-validation).
+3. **Score candidates** — apply the trained model to every candidate
+   location across three store types:
+   - **Roadside** — a 500m × 500m grid covering all of Japan (~143k cells)
+   - **SC** — unopened shopping centres (~2.9k)
+   - **Terminal** — major train-station catchments (~2.5k)
+4. **Filter to a shortlist** — keep locations that clear a sales floor and a
+   few sanity filters, then rank them.
+
+The repo ships the **trained model**, the **training tables**, and the
+**scripts** for the steps that aren't already inside the notebooks. Raw input
+data and the large final deliverables (maps, full Excel) live on internal
+SharePoint.
 
 ---
 
-## TL;DR
+## Results (TL;DR)
 
-| | Roadside | SC | Terminal | **Total** |
+Starting from ~148k candidate locations, the filters narrow down to a
+recommended shortlist:
+
+- **3,466** locations pass the pre-filter + ¥60M/yr sales floor.
+- Outside the 4 major metros we add a minimum-population floor, leaving
+  **2,735 recommended sites**.
+
+Recommended **2,735 sites**, by region and store type:
+
+| Region | Roadside | SC | Terminal | **Total** |
 |---|---:|---:|---:|---:|
-| After U4 + ¥60M cut (raw picks) | — | — | — | **3,466** |
-| Focus 4 (Tokyo / Osaka / Aichi / Fukuoka) | 504 | 538 | 404 | 1,446 |
-| Other regions, after `pop ≥ 400` floor | 440 | 532 | 317 | 1,289 |
-| **Final picks** | **944** | **1,070** | **721** | **2,735** |
+| Focus 4 (Tokyo / Osaka / Aichi / Fukuoka) | 504 | 538 | 404 | **1,446** |
+| Other regions (after `pop ≥ 400` floor) | 440 | 532 | 317 | **1,289** |
+| **Total** | **944** | **1,070** | **721** | **2,735** |
 
-Calibration: `forecast = raw_pred × 0.83 × 1.12`. Sales gate: ≥ ¥60M / yr.
+Each location's sales forecast is `raw_model_prediction × 0.83 × 1.12`
+(see *Modeling brief*); the ¥60M/yr floor is applied to this calibrated
+forecast.
 
 ---
 
@@ -30,23 +60,24 @@ T5HM/
 ├── requirements.txt
 ├── credentials.yaml.example          # template for ESRI creds
 ├── notebooks/
-│   ├── 03_data_prep.ipynb            # raw Data → 36 features per anchor (ANCHOR_MODE switch)
-│   └── 04_modeling.ipynb             # train XGBoost + score grid / SC / Terminal candidates + OOF SHAP
-├── src/                              # 8 production scripts + 1 helper
-│   ├── build_terminal_anchors.py
-│   ├── build_terminal_features.py
-│   ├── supplement_build_fast.py      # helper, imported by build_terminal_features
-│   ├── score_whitespace.py
-│   ├── _plot_train_shap.py
-│   ├── build_merged_v2_terminalpoly.py
-│   ├── _export_final_picks_terminalpoly_U4.py
-│   ├── _other_region_threshold_sweep.py
-│   └── _build_pop400_excel.py
+│   ├── 03_data_prep.ipynb            # raw Data -> 36 features per location (ANCHOR_MODE switch)
+│   └── 04_modeling.ipynb             # train XGBoost + score grid/SC/Terminal + OOF SHAP
+├── src/                              # every file below is used; see Tier 1 / Tier 2
+│   │  # --- Tier 1: terminal feature build + train SHAP ---
+│   ├── build_terminal_anchors.py        # station GPKG -> terminal anchor table
+│   ├── build_terminal_features.py       # enrich terminal anchors into model features
+│   ├── supplement_build_fast.py         # ESRI enrichment helpers (imported by the line above)
+│   ├── _plot_train_shap.py              # train-set SHAP bar + beeswarm PNGs
+│   │  # --- Tier 2: final-picks pipeline (run in order) ---
+│   ├── build_merged_v2_terminalpoly.py  # merge SC + Terminal + Roadside scored universe
+│   ├── _export_final_picks_terminalpoly_U4.py  # pre-filter + calibration + ¥60M -> 3,466 picks
+│   ├── _other_region_threshold_sweep.py # pop>=400 floor on non-metro regions -> 2,735 picks
+│   └── _build_pop400_excel.py           # final two-sheet Excel deliverable
 └── output/
-    ├── models/xgb_l6m_sales_model_bundle.pkl    # 5-fold bundle (~0.8 MB)
+    ├── models/xgb_l6m_sales_model_bundle.pkl    # 5-fold model bundle (~0.8 MB)
     └── tables/
         ├── model_features_full.csv              # 186 training rows × 158 cols
-        └── y_targets.csv
+        └── y_targets.csv                         # training targets (monthly sales)
 ```
 
 `Data/`, the full whitespace deliverables, ESRI cache, and large feature
@@ -98,10 +129,9 @@ Notebook 04 outputs (under `output/models/`):
 - `whitespace_grid_scores.csv`, `whitespace_sc_scores.csv`, `whitespace_terminal_scores.csv`
 - OOF SHAP table + plots, feature importance, OOF scatter
 
-Optional add-ons:
-- `python src\_plot_train_shap.py` — train-set SHAP bar / beeswarm PNGs.
-- `python src\score_whitespace.py` — standalone re-score using the saved
-  bundle (mirrors notebook 04 Section 11; notebook 04 is preferred).
+Optional add-on:
+- `python src\_plot_train_shap.py` — train-set SHAP bar / beeswarm PNGs
+  (complements notebook 04's out-of-fold SHAP).
 
 ---
 
