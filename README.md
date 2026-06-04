@@ -5,7 +5,7 @@ candidate location in the country and shortlists the best ones.
 
 ## How it works
 
-1. **Build features** — for each location, compute ~50 surrounding signals
+1. **Build features** — for each location, compute surrounding signals
    (population, competitors, Starbucks co-location, points of interest,
    spending power, etc.) from ESRI + government data.
 2. **Train the model** — fit an XGBoost model on 186 existing stores to
@@ -18,10 +18,11 @@ candidate location in the country and shortlists the best ones.
    (competitor / population), then rank them.
 
 Everything notebooks 03 and 04 can do is done in the notebooks. `src/` only
-holds what the notebooks can't: building Terminal features (different geometry
-than the grid), and the downstream pipeline that turns model scores into the
-final picks. Raw input data and large deliverables (maps, full Excel) live on
-internal SharePoint.
+holds what the notebooks can't: building Terminal features (their anchors come
+from a curated station-catchment file plus station metadata, not the
+nationwide grid that notebook 03 generates), and the downstream pipeline that
+turns model scores into the final picks. Raw input data and large deliverables
+(maps, full Excel) live on internal SharePoint.
 
 ---
 
